@@ -1,5 +1,5 @@
 provider "aws" {
-  region = local.region
+  region = "us-east-2"
 }
 
 provider "aws" {
@@ -59,7 +59,7 @@ data "aws_iam_session_context" "current" {
 
 locals {
   name   = var.name
-  region = var.region
+  region = "us-east-2"
   # Trn1 and Inf2 instances are available in specific AZs in us-east-1,
   # us-east-2, and us-west-2. For Trn1, the first AZ id (below) should be used.
   az_mapping = {
