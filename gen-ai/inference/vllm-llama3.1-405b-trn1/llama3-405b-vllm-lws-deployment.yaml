@@ -3,6 +3,32 @@
 # 1. **Region and Environment Variables**: Verify that the `AWS_DEFAULT_REGION` and other environment variables are correctly set for your deployment. This YAML is currently configured for the `us-west-2` region.
 # 2. **Pre-requisite**: Check the README.md file for instructions.
 # 3. **Custom Images**: This configuration uses a custom image hosted on ECR (`public.ecr.aws/data-on-eks/neuron-sdk2.20-vllm0.5.0-neuron:latest`). Ensure that this image is accessible and meets your deployment needs.
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mistral-neuron-alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/success-codes: "200-299"
+    alb.ingress.kubernetes.io/healthcheck-path: "/v1/health/ready"
+    alb.ingress.kubernetes.io/healthcheck-port: "8000"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '100'
+        
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mistral-llm-service # Replace with the service name you created for nim-llm
+                port:
+                  number: 8000
 
 ---
 apiVersion: v1
@@ -16,7 +42,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    leaderworkerset.sigs.k8s.io/name: llama3-405b-lws
+    leaderworkerset.sigs.k8s.io/name: mistral-large-lws
     role: leader
   type: ClusterIP
 
@@ -24,7 +50,7 @@ spec:
 apiVersion: leaderworkerset.x-k8s.io/v1
 kind: LeaderWorkerSet
 metadata:
-  name: llama3-405b-lws
+  name: mistral-large-lws
   namespace: default
   annotations:
     leaderworkerset.sigs.k8s.io/exclusive-topology: eks.amazonaws.com/nodegroup
@@ -48,7 +74,7 @@ spec:
           - name: HF_HOME
             value: /tmp/cache
           - name: MODEL
-            value: /mnt/k8s-disks/0/checkpoints/llama-3.1-405b-instruct/
+            value: /mnt/k8s-disks/0/checkpoints/mistral-large-neuron/
           - name: NEURON_RANK_ID
             value: "0"
           - name: NEURON_CC_FLAGS
@@ -72,9 +98,9 @@ spec:
           - name: VLLM_ENGINE_ITERATION_TIMEOUT_S
             value: "600"
           - name: AWS_DEFAULT_REGION
-            value: us-west-2
+            value: us-east-2
           - name: NEURON_MODEL_PATH
-            value: /mnt/k8s-disks/0/checkpoints/llama-3.1-405b-instruct/
+            value: /mnt/k8s-disks/0/checkpoints/mistral-large-neuron/
           - name: NEURON_CONTEXT_LENGTH_ESTIMATE
             value: '[''1024'',''2048'',''4096'',''8192'',''16384'',''32768'',''65536'',''131072'']'
           - name: MAX_MODEL_LENGTH
@@ -140,7 +166,7 @@ spec:
             medium: Memory
             sizeLimit: 15Gi
     restartPolicy: Default
-    size: 4
+    size: 2
     workerTemplate:
       metadata: {}
       spec:
@@ -153,7 +179,7 @@ spec:
           - /usr/local/bin/run.sh
           env:
           - name: MODEL
-            value: /mnt/k8s-disks/0/checkpoints/llama-3.1-405b-instruct/
+            value: /mnt/k8s-disks/0/checkpoints/mistral-large-neuron/
           - name: SWAP_SPACE
             value: "1"
           - name: HF_HOME
@@ -183,9 +209,9 @@ spec:
           - name: VLLM_ENGINE_ITERATION_TIMEOUT_S
             value: "600"
           - name: AWS_DEFAULT_REGION
-            value: us-west-2
+            value: us-east-2
           - name: NEURON_MODEL_PATH
-            value: /mnt/k8s-disks/0/checkpoints/llama-3.1-405b-instruct/
+            value: /mnt/k8s-disks/0/checkpoints/mistral-large-neuron/
           - name: NEURON_CONTEXT_LENGTH_ESTIMATE
             value: '[''1024'',''2048'',''4096'',''8192'',''16384'',''32768'',''65536'',''131072'']'
           - name: MAX_MODEL_LENGTH
