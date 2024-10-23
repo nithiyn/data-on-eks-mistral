@@ -166,7 +166,7 @@ spec:
             medium: Memory
             sizeLimit: 15Gi
     restartPolicy: Default
-    size: 2
+    size: 3
     workerTemplate:
       metadata: {}
       spec:
